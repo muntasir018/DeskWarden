@@ -13,7 +13,6 @@ No subscriptions. No account. No cloud. Just install and it works.
 
 ---
 
-## 📸 Interface Preview
 
 ## 📸 Interface Preview
 
@@ -25,6 +24,7 @@ No subscriptions. No account. No cloud. Just install and it works.
 
 ### Access Denied
 ![Block Notice](https://github.com/user-attachments/assets/8db6e44e-920b-46fe-a564-087c5e95f53b)
+
 
 ---
 
