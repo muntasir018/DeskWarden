@@ -11,6 +11,16 @@ DeskWarden runs silently in the background and intercepts any app you choose the
 
 No subscriptions. No account. No cloud. Just install and it works.
 
+
+
+## 🎨 UI & Experience
+
+Crafted with a modern Premium interface — every screen, every 
+interaction feels deliberate. The Control Panel is clean and 
+structured. The lock screen is bold and immersive. 
+This is what security software should look like.
+
+
 ---
 
 
