@@ -1,74 +1,92 @@
-# 🛡️ DeskWarden — Windows Application Locker
+# 🛡️ DeskWarden — Take Control of Your PC
 
-**DeskWarden** is a background application for Windows that works like a phone app lock — any app you choose will require a password before it opens.
+> Copyright © 2026 Tahasinur Rahman Muntasir. Licensed under the [MIT License](LICENSE).
+
+> **Your PC. Your rules.**
+> Lock any app with a password — just like your phone, but for Windows.
+
+DeskWarden runs silently in the background and intercepts any app you choose the moment it opens — before it even has a chance to load.
+
+No subscriptions. No account. No cloud. Just install and it works.
 
 ---
 
-## ✨ Features
+## 💡 Why DeskWarden?
 
-- 🔒 **Password-protect any app** — lock any `.exe` on your PC
-- 🖥️ **Fullscreen lock screen** — appears instantly when a locked app is opened
-- 🔁 **Three lock modes** per app:
-  - **Ask Always** — asks for password every time the app opens
-  - **Session Once** — asks once per session, then remembers until restart
-  - **Permanent Block** — always blocks the app, no password option
+Ever wished you could lock Chrome, a game, or any app on your PC — the same way you lock apps on your phone?
+
+Windows doesn't have this built-in. Most solutions are either paid, require technical setup, or just hide the window instead of truly blocking the app.
+
+**DeskWarden actually freezes the process** at the kernel level. The app cannot open, cannot run, and cannot be bypassed — until the correct password is entered.
+
+- ✅ Free and open source
+- ✅ No technical knowledge needed — one double-click to install
+- ✅ Works on any `.exe` — browsers, games, tools, anything
+- ✅ Lightweight — no Electron, no heavy runtime, no background bloat
+
+---
+
+## ✨ What It Can Do
+
+- 🔒 **Lock any app with a password** — the app freezes instantly on launch
+- 🖥️ **Fullscreen lock screen** — clean, unbypassable, appears in under a second
+- 🔁 **Four lock modes** per app — full flexibility:
+  - **Ask Always** — password required every single time
+  - **Session Once** — ask once, remember until PC restart
+  - **Always Block** — permanently blocked, no password option
+  - **None** — tracked but unrestricted, switch modes anytime
 - 🚫 **Wrong password = app killed** — no way around it
-- 🔐 **SHA-256 password hashing** — password never stored in plain text
-- ⏱️ **Brute-force protection** — lockout after 3 wrong attempts
-- 🔄 **Auto-update** — checks GitHub for new versions automatically
-- 💾 **Backup & Restore** — export/import your settings
-- 📋 **Security Log** — records every unlock attempt and failed password
-- 🚀 **Auto-start on login** — runs silently in the background from startup
-- 🖱️ **System tray icon** — lives in the taskbar tray, not the taskbar itself
-
----
-
-## 🖥️ Requirements
-
-- Windows 10 or 11
-- Python 3.12+ (installer handles this automatically)
-
-**Python packages** (installed automatically):
-```
-psutil
-pywin32
-Pillow
-PyQt6
-```
+- 🔐 **SHA-256 password hashing** — your password is never stored in plain text
+- ⏱️ **Brute-force protection** — locked out after 3 wrong attempts
+- 🔄 **Auto-update** — checks for new versions automatically
+- 💾 **Backup & Restore** — export and import your entire setup
+- 📋 **Security Log** — full history of every unlock and failed attempt
+- 🚀 **Starts with Windows** — always running, always protecting
 
 ---
 
 ## 📦 Installation
 
-1. Download the latest release from the [Releases](https://github.com/muntasir018/DeskWarden/releases) page
-2. Extract all files to the same folder
+> No Python knowledge required. The installer handles everything.
+
+1. Go to the [Releases](https://github.com/muntasir018/DeskWarden/releases) page and download the latest version
+2. Extract the zip file anywhere
 3. Right-click `install_deskwarden.bat` → **Run as administrator**
-4. The installer will handle everything automatically:
-   - Installs Python if not found
-   - Installs all required packages
-   - Copies files to `C:\Program Files\DeskWarden`
-   - Creates Desktop and Start Menu shortcuts
-   - Registers auto-start on login
-   - Launches DeskWarden
+4. Done — DeskWarden installs itself, creates shortcuts, and starts automatically
+
+**What the installer does behind the scenes:**
+- Detects and installs Python automatically if not found
+- Downloads and installs all required packages with a real-time progress bar
+- Copies everything to `C:\Program Files\DeskWarden`
+- Creates Desktop and Start Menu shortcuts
+- Registers itself to start on Windows login
+- Launches DeskWarden immediately
+
+---
+
+## 🚀 Getting Started
+
+1. After installation, find the **DeskWarden icon in your system tray** (bottom-right corner)
+2. Double-click the desktop shortcut or right-click the tray icon → **Control Panel**
+3. Set your master password on first run
+4. Click **"Add App"** → select any `.exe` you want to lock
+5. Choose a lock mode — that's it
+
+From this point on, DeskWarden runs invisibly and protects your chosen apps every time they open.
 
 ---
 
 ## 🗑️ Uninstallation
 
 1. Right-click `uninstall_deskwarden.bat` → **Run as administrator**
-2. Follow the on-screen steps
-3. Optionally keep or remove your settings and locked app list
+2. Follow the steps — optionally keep or delete your settings
 
 ---
 
-## 🚀 How to Use
+## ⚠️ Known Limitations
 
-1. After installation, DeskWarden runs silently in the **system tray** (bottom-right corner)
-2. **Right-click** the tray icon → open **Control Panel**
-3. Set a master password on first run
-4. Click **"Add App"** to add any `.exe` you want to lock
-5. Choose a lock mode for each app
-6. That's it — DeskWarden monitors all apps in the background
+- Games with **kernel-level anti-cheat** (EAC, BattlEye) may resist process suspension
+- Some **UWP / Microsoft Store** apps have non-standard process structures and may not work correctly
 
 ---
 
@@ -83,23 +101,17 @@ PyQt6
 
 ---
 
-## ⚠️ Known Limitations
+## 🔧 Requirements
 
-- Games with **anti-cheat** (EAC, BattlEye) may not be interceptable
-- Some **UWP / Microsoft Store** apps use different process structures and may not work correctly
-
----
-
-## 🔄 Auto-Update
-
-DeskWarden checks GitHub for new versions every time you open the Control Panel. If an update is available, a notification will appear with a link to the release page. You can also manually check via **Control Panel → Settings → Check for Update**.
+- Windows 10 or 11 (64-bit)
+- Python 3.10+ *(installer handles this automatically)*
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**.
-
-If you like DeskWarden and want to use it, modify it, or build something new on top of it — go ahead! All I ask is a small credit back to the original author. Just keep my name somewhere in your project, that's it. 🙂
+This project is licensed under the MIT License.
+You are free to use, modify, and distribute this software.
+Attribution to the original author must be preserved in all copies.
 
 > Built with ❤️ by [muntasir018](https://github.com/muntasir018)
