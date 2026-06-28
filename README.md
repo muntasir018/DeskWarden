@@ -15,9 +15,16 @@ No subscriptions. No account. No cloud. Just install and it works.
 
 ## 📸 Interface Preview
 
-| Control Panel | Password Protection | Access Denied |
-| :---: | :---: | :---: |
-| ![Control Panel](https://github.com/user-attachments/assets/66247d91-8c2a-4860-849e-74bde6510603) | ![Lock Screen](https://github.com/user-attachments/assets/8db6e44e-920b-46fe-a564-087c5e95f53b) | ![Block Notice](https://github.com/user-attachments/assets/60b6d622-0cae-4155-970b-1d7a6de9e56b) |
+## 📸 Interface Preview
+
+### Control Panel
+![Control Panel](https://github.com/user-attachments/assets/66247d91-8c2a-4860-849e-74bde6510603)
+
+### Password Protection
+![Lock Screen](https://github.com/user-attachments/assets/60b6d622-0cae-4155-970b-1d7a6de9e56b)
+
+### Access Denied
+![Block Notice](https://github.com/user-attachments/assets/8db6e44e-920b-46fe-a564-087c5e95f53b)
 
 ---
 
