@@ -1,5 +1,7 @@
 # 🛡️ DeskWarden — Take Control of Your PC
 
+![DeskWarden Logo](https://github.com/user-attachments/assets/db1db07c-080c-440a-acd7-feea60f4e218)
+
 > Copyright © 2026 Tahasinur Rahman Muntasir. Licensed under the [MIT License](LICENSE).
 
 > **Your PC. Your rules.**
@@ -8,6 +10,14 @@
 DeskWarden runs silently in the background and intercepts any app you choose the moment it opens — before it even has a chance to load.
 
 No subscriptions. No account. No cloud. Just install and it works.
+
+---
+
+## 📸 Interface Preview
+
+| Control Panel | Password Protection | Access Denied |
+| :---: | :---: | :---: |
+| ![Control Panel](https://github.com/user-attachments/assets/66247d91-8c2a-4860-849e-74bde6510603) | ![Lock Screen](https://github.com/user-attachments/assets/8db6e44e-920b-46fe-a564-087c5e95f53b) | ![Block Notice](https://github.com/user-attachments/assets/60b6d622-0cae-4155-970b-1d7a6de9e56b) |
 
 ---
 
