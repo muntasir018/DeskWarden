@@ -14,7 +14,7 @@ The latest release of DeskWarden is actively supported with security updates.
 If you discover a security vulnerability in DeskWarden, please report it responsibly:
 
 - **Preferred method:** Open a [GitHub Security Advisory](https://github.com/muntasir018/DeskWarden/security/advisories/new) (private, only visible to maintainers).
-- **Alternative method:** Email the maintainer directly at **[mdmuntasir017@gmail.com]** with the subject line `DeskWarden Security Report`.
+- **Alternative method:** Email the maintainer directly at **mdmuntasir017@gmail.com** with the subject line `DeskWarden Security Report`.
 
 Please do **not** open a public GitHub Issue for security vulnerabilities, to avoid exposing details before a fix is available.
 
