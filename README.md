@@ -1,5 +1,7 @@
 # 🛡️ DeskWarden — Take Control of Your PC
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13500/badge)](https://www.bestpractices.dev/projects/13500)
+
 ![DeskWarden Logo](https://github.com/user-attachments/assets/db1db07c-080c-440a-acd7-feea60f4e218)
 
 > Copyright © 2026 Tahasinur Rahman Muntasir. Licensed under the [MIT License](LICENSE).
