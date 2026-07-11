@@ -1,0 +1,34 @@
+# ─── Python cache / bytecode ─────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ─── pytest ───────────────────────────────────────────────────────────────
+.pytest_cache/
+
+# ─── Virtual environments ────────────────────────────────
+venv/
+.venv/
+env/
+
+# ─── Build / packaging আউটপুট ──────────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+
+# ─── OS-generated junk ──────────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ─── Editor/IDE ফোল্ডার ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ─── DeskWarden-এর নিজস্ব রানটাইম ফাইল ────────────────────────────────
+config.json
+security_log.json
+diagnostic_log.txt
+crash_log.txt
+instance.pid
