@@ -1,31 +1,24 @@
 name: Tests
-
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   test:
     runs-on: windows-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest flake8
-
+          pip install pytest flake8 PyQt6 psutil pillow
       - name: Run automated test suite
         run: pytest tests/ -v
-
       - name: Run linter (flake8) for warning flags
         run: flake8 . --count --show-source --statistics --max-line-length=120 --exit-zero
