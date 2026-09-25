@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
     QButtonGroup, QFileDialog, QLineEdit,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QCursor, QFileSystemModel
 
 from ...core.config import load_config, save_config
@@ -34,15 +34,19 @@ class _AppsPanelMixin:
         cl.setContentsMargins(18, 14, 18, 16); cl.setSpacing(12)
 
         hdr = QHBoxLayout()
+        hdr.setContentsMargins(0, 0, 0, 0)
+        hdr.setSpacing(10)
+
         hl = QLabel("PROTECTED APPS")
         hl.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
         hl.setStyleSheet(f"color: #b794f6; background: transparent;")
         hdr.addWidget(hl)
-        hdr.addSpacing(14)
+
+        is_paused = bool(self._cfg.get("protection_paused", False))
 
         self._search_input = QLineEdit()
         self._search_input.setPlaceholderText("🔍 Search apps...")
-        self._search_input.setFixedWidth(160)
+        self._search_input.setFixedWidth(145 if is_paused else 180)
         self._search_input.setFixedHeight(26)
         self._search_input.setStyleSheet(f"""
             QLineEdit {{
@@ -61,6 +65,20 @@ class _AppsPanelMixin:
         """)
         self._search_input.textChanged.connect(self._on_search_changed)
         hdr.addWidget(self._search_input)
+
+        self._pause_warn_lbl = QLabel("⚠ Protection Paused — All Apps Unlocked", card)
+        self._pause_warn_lbl.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        self._pause_warn_lbl.setStyleSheet("""
+            QLabel {
+                color: #fca5a5;
+                background: #2a1215;
+                border: 1px solid #7f1d1d;
+                border-radius: 8px;
+                padding: 2px 9px;
+            }
+        """)
+        self._pause_warn_lbl.setVisible(is_paused)
+        hdr.addWidget(self._pause_warn_lbl)
 
         hdr.addStretch()
 
@@ -119,7 +137,28 @@ class _AppsPanelMixin:
         self._section_widgets["apps"] = panel
         self._refresh_apps()
 
+        self._pause_poll_timer = QTimer(panel)
+        self._pause_poll_timer.setInterval(1000)
+        self._pause_poll_timer.timeout.connect(self._sync_pause_badge)
+        self._pause_poll_timer.start()
+
     # ── Refresh & Search ─────────────────────────────────────────────────
+
+    def _apply_pause_warning_state(self, is_paused: bool):
+        if hasattr(self, "_pause_warn_lbl"):
+            self._pause_warn_lbl.setVisible(is_paused)
+        if hasattr(self, "_search_input"):
+            self._search_input.setFixedWidth(145 if is_paused else 180)
+
+    def _sync_pause_badge(self):
+        try:
+            cfg = load_config()
+            is_paused = bool(cfg.get("protection_paused", False))
+            if hasattr(self, "_pause_warn_lbl"):
+                if self._pause_warn_lbl.isVisible() != is_paused:
+                    self._apply_pause_warning_state(is_paused)
+        except Exception:
+            pass
 
     def _on_search_changed(self, _text: str):
         self._filter_apps()
@@ -167,6 +206,7 @@ class _AppsPanelMixin:
         self._cfg = load_config()
         apps = self._cfg.get("locked_apps", [])
         self._count_badge.setText(f"{len(apps)} app(s)")
+        self._apply_pause_warning_state(bool(self._cfg.get("protection_paused", False)))
         self._app_cards = []
 
         while self._cards_lay.count():

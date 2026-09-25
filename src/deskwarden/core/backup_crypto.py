@@ -186,6 +186,7 @@ def pack_backup_container(
     safe_data = {
         "locked_apps": cfg.get("locked_apps", []),
         "autostart": cfg.get("autostart", True),
+        "sound_enabled": cfg.get("sound_enabled", True),
         "auto_update": cfg.get("auto_update", True),
         "recovery_key_enabled": cfg.get("recovery_key_enabled", True),
         "recovery_email_enabled": cfg.get("recovery_email_enabled", True),

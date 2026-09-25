@@ -9,7 +9,7 @@ import time
 import threading
 
 from .core.logging_utils import dlog, log_crash
-from .core.config import load_config
+from .core.config import load_config, save_config
 from .core.updater import (
     CURRENT_VERSION, check_for_update_auto_async,
     get_cached_update_snapshot, is_version_skipped,
@@ -27,6 +27,7 @@ from .ui.block_notice import BlockNotice
 from .ui.auth_dialogs import (
     show_control_panel_auth, show_quit_auth, release_control_panel_lock,
 )
+from .ui.pause_dialog import show_pause_protection_auth
 from .ui.ui_thread import (
     _run_on_ui_thread, _run_on_ui_thread_sync, _ui_thread_loop, _ui_ready_event,
 )
@@ -259,6 +260,13 @@ def main():
     def _do_quit():
         control_panel.stop()          
         try:
+            c = load_config()
+            if c.get("protection_paused", False):
+                c["protection_paused"] = False
+                save_config(c)
+        except Exception:
+            pass
+        try:
             marker = os.path.join(APPDATA_DIR, "clean_exit.marker")
             with open(marker, "w") as f:
                 f.write("clean")
@@ -271,9 +279,45 @@ def main():
     def _quit_with_auth():
         _run_on_ui_thread(lambda: show_quit_auth(_do_quit))
 
+    def _update_tray_tooltip():
+        if monitor.is_paused():
+            status_text = monitor.get_pause_status_text()
+            if status_text and status_text != "Paused":
+                tray.update_tooltip(f"DeskWarden — Paused ({status_text})")
+            else:
+                tray.update_tooltip("DeskWarden — Protection Paused (All Apps Unlocked)")
+        else:
+            tray.update_tooltip("DeskWarden — Running")
+
+    def _on_pause_requested(duration_seconds=None):
+        def _on_pause_confirmed():
+            monitor.pause_protection(duration_seconds=duration_seconds)
+            tray.refresh_icon()
+            _update_tray_tooltip()
+        _run_on_ui_thread(lambda: show_pause_protection_auth(_on_pause_confirmed, duration_seconds=duration_seconds))
+
+    def _on_resume_requested():
+        monitor.resume_protection()
+        tray.refresh_icon()
+        _update_tray_tooltip()
+
+    def _on_auto_resume():
+        tray.refresh_icon()
+        _update_tray_tooltip()
+        try:
+            tray.show_info_toast("Protection Resumed", "Pause time expired. All apps are protected.")
+        except Exception:
+            pass
+
+    monitor._on_auto_resume = _on_auto_resume
+
     tray = NativeTray(
         on_control_panel=lambda: open_control_panel(),
         on_quit=_quit_with_auth,
+        on_pause=_on_pause_requested,
+        on_resume=_on_resume_requested,
+        get_paused_fn=monitor.is_paused,
+        get_pause_status_fn=monitor.get_pause_status_text,
     )
     tray.start()
 
@@ -313,6 +357,8 @@ def main():
     try:
         while True:
             time.sleep(5)
+            if monitor.is_paused():
+                _update_tray_tooltip()
     except (SystemExit, KeyboardInterrupt):
         dlog("INFO", "DeskWarden shutting down (SystemExit/KeyboardInterrupt)")
     except Exception as e:

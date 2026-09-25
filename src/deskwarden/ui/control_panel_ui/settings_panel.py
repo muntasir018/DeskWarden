@@ -85,6 +85,39 @@ class _SettingsPanelMixin:
 
         pl.addWidget(card)
 
+        # ── AUDIO & FEEDBACK card ────────────────────────────────
+        scard = _Card(panel, bg=_CARD, border=_BORD, radius=14)
+        scl = QVBoxLayout(scard)
+        scl.setContentsMargins(18, 14, 18, 16); scl.setSpacing(10)
+
+        scl.addWidget(_sec_hdr("🔊", "Audio & Feedback", "Sound effects for authentication", "#1a162b", "#c4b5fd"))
+
+        sdiv = QFrame(); sdiv.setFixedHeight(1)
+        sdiv.setStyleSheet(f"background: {_BORD};")
+        scl.addWidget(sdiv)
+
+        row_snd = QWidget(); row_snd.setStyleSheet("background: transparent;")
+        row_snd_l = QHBoxLayout(row_snd)
+        row_snd_l.setContentsMargins(0, 0, 0, 0); row_snd_l.setSpacing(0)
+        snd_lbl = QWidget(); snd_lbl.setStyleSheet("background: transparent;")
+        snd_lbl_l = QVBoxLayout(snd_lbl); snd_lbl_l.setSpacing(1); snd_lbl_l.setContentsMargins(0,0,0,0)
+        snd_title = QLabel("Sound Effects")
+        snd_title.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        snd_title.setStyleSheet(f"color: {_FG}; background: transparent;")
+        snd_sub = QLabel("Play subtle audio feedback on unlock and incorrect attempts")
+        snd_sub.setFont(QFont("Segoe UI", 8))
+        snd_sub.setStyleSheet(f"color: {_MUTE}; background: transparent;")
+        snd_lbl_l.addWidget(snd_title); snd_lbl_l.addWidget(snd_sub)
+        row_snd_l.addWidget(snd_lbl, 1)
+        self._snd_cb = QCheckBox("")
+        self._snd_cb.setFont(QFont("Segoe UI", 9))
+        self._snd_cb.setChecked(self._cfg.get("sound_enabled", True))
+        self._snd_cb.stateChanged.connect(self._toggle_sound)
+        row_snd_l.addWidget(self._snd_cb)
+        scl.addWidget(row_snd)
+
+        pl.addWidget(scard)
+
         # ── BACKUP & RESTORE card ─────────────────────────────────
         bcard = _Card(panel, bg=_CARD, border=_BORD, radius=14)
         bcl = QVBoxLayout(bcard)
@@ -413,7 +446,7 @@ class _SettingsPanelMixin:
         ver_lbl = QLabel(
             '<span style="color:#f5f0ff; font-weight:700;">DeskWarden</span>'
             '&nbsp;&nbsp;'
-            '<span style="color:#c4b5fd;">v1.2.0</span>'
+            f'<span style="color:#c4b5fd;">{CURRENT_VERSION}</span>'
         )
         ver_lbl.setFont(QFont("Segoe UI", 9))
         ver_lbl.setStyleSheet("background: transparent;")

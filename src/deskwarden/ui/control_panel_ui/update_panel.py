@@ -22,10 +22,15 @@ from .update_dialog import _UpdateCatalogDialog
 
 class _UpdatePanelMixin:
 
-    # ── Startup toggle ───────────────────────────────────────────────────
+    # ── Startup & Audio toggle ───────────────────────────────────────────
 
     def _toggle_auto(self):
         self._cfg["autostart"] = self._auto_cb.isChecked()
+        save_config(self._cfg)
+
+    def _toggle_sound(self):
+        self._cfg["sound_enabled"] = self._snd_cb.isChecked()
+        save_config(self._cfg)
     # ── Settings nav badge ───────────────────────────────────────────────
 
     def _refresh_settings_badge(self):
@@ -60,23 +65,39 @@ class _UpdatePanelMixin:
         self._cfg["auto_update"] = self._auto_update_cb.isChecked()
         save_config(self._cfg)
 
+    def _on_update_result_received(self, res, is_manual):
+        self._update_result_pending = res
+        self._apply_update_result(is_manual=is_manual)
+
     def _check_update(self):
         self._update_btn.setEnabled(False)
-        self._update_status.setStyleSheet(
-            f"color: {_MUTE}; background: transparent;")
-        self._update_status.setText("⏳ Checking for updates…")
+        while self._update_status_layout.count():
+            item = self._update_status_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+        lbl = QLabel("⏳ Checking for updates…")
+        lbl.setFont(QFont("Segoe UI", 8))
+        lbl.setStyleSheet(f"color: {_MUTE}; background: transparent;")
+        lbl.setWordWrap(True)
+        self._update_status_layout.addWidget(lbl, 1)
+        self._update_status = lbl
 
         def _on_result(res):
-
-            from PyQt6.QtCore import QMetaObject, Qt as _Qt
-
-            self._update_result_pending = res
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(0, self._apply_update_result)
+            try:
+                sig = getattr(self, "_update_result_signal", None)
+                if sig is not None:
+                    sig.emit(res, True)
+                else:
+                    self._update_result_pending = res
+                    self._apply_update_result(is_manual=True)
+            except Exception:
+                pass
 
         check_for_update_async(callback=_on_result)
 
-    def _apply_update_result(self):
+    def _apply_update_result(self, is_manual=False):
         res = getattr(self, "_update_result_pending", None)
         self._update_btn.setEnabled(True)
         if res is None:
@@ -88,7 +109,6 @@ class _UpdatePanelMixin:
             txt = f"Last checked: {last_checked}" if last_checked else "Last checked: Never"
             self._last_checked_lbl.setText(txt)
 
-        
         while self._update_status_layout.count():
             item = self._update_status_layout.takeAt(0)
             w = item.widget()
@@ -155,7 +175,7 @@ class _UpdatePanelMixin:
             self._update_status = lbl
 
         self._refresh_settings_badge()
-        self._maybe_show_catalog(res)
+        self._maybe_show_catalog(res, force=is_manual)
 
     # ── "What's new" catalog popup ───────────────────────────────────────
 

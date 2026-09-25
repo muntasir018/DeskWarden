@@ -21,6 +21,15 @@ def hash_pw(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
 
 
+def is_caps_lock_on() -> bool:
+    """Return True if Windows Caps Lock is currently active."""
+    try:
+        import ctypes
+        return bool(ctypes.windll.user32.GetKeyState(0x14) & 0x0001)
+    except Exception:
+        return False
+
+
 _KEY_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 def generate_recovery_key() -> str:

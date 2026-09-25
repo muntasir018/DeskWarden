@@ -1026,6 +1026,7 @@ class _SettingsIOMixin:
                 cur_cfg["locked_apps"] = backup_cfg.get("locked_apps", [])
                 cur_cfg["autostart"] = backup_cfg.get("autostart", cur_cfg.get("autostart", True))
                 cur_cfg["auto_update"] = backup_cfg.get("auto_update", cur_cfg.get("auto_update", True))
+                cur_cfg["sound_enabled"] = backup_cfg.get("sound_enabled", cur_cfg.get("sound_enabled", True))
                 if "recovery_key_enabled" in backup_cfg:
                     cur_cfg["recovery_key_enabled"] = backup_cfg["recovery_key_enabled"]
                 if "recovery_email_enabled" in backup_cfg:
@@ -1035,6 +1036,8 @@ class _SettingsIOMixin:
                 self._cfg = load_config()
                 self._refresh_apps()
                 self._auto_cb.setChecked(self._cfg.get("autostart", False))
+                if hasattr(self, "_snd_cb"):
+                    self._snd_cb.setChecked(self._cfg.get("sound_enabled", True))
                 set_autostart(self._cfg.get("autostart", False))
                 if hasattr(self, "_refresh_security_panel"):
                     self._refresh_security_panel()
@@ -1064,6 +1067,7 @@ class _SettingsIOMixin:
                 cur_cfg["locked_apps"] = backup_cfg.get("locked_apps", [])
                 cur_cfg["autostart"] = backup_cfg.get("autostart", cur_cfg.get("autostart", True))
                 cur_cfg["auto_update"] = backup_cfg.get("auto_update", cur_cfg.get("auto_update", True))
+                cur_cfg["sound_enabled"] = backup_cfg.get("sound_enabled", cur_cfg.get("sound_enabled", True))
                 if "recovery_key_enabled" in backup_cfg:
                     cur_cfg["recovery_key_enabled"] = backup_cfg["recovery_key_enabled"]
                 if "recovery_email_enabled" in backup_cfg:
@@ -1073,6 +1077,8 @@ class _SettingsIOMixin:
                 self._cfg = load_config()
                 self._refresh_apps()
                 self._auto_cb.setChecked(self._cfg.get("autostart", False))
+                if hasattr(self, "_snd_cb"):
+                    self._snd_cb.setChecked(self._cfg.get("sound_enabled", True))
                 set_autostart(self._cfg.get("autostart", False))
                 if hasattr(self, "_refresh_security_panel"):
                     self._refresh_security_panel()
@@ -1100,6 +1106,8 @@ class _SettingsIOMixin:
                 self._reset_pw_form()
 
                 self._auto_cb.setChecked(self._cfg.get("autostart", False))
+                if hasattr(self, "_snd_cb"):
+                    self._snd_cb.setChecked(self._cfg.get("sound_enabled", True))
                 set_autostart(self._cfg.get("autostart", False))
                 if hasattr(self, "_refresh_security_panel"):
                     self._refresh_security_panel()

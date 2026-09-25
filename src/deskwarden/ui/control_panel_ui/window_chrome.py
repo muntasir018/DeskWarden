@@ -111,9 +111,15 @@ class _WindowChromeMixin:
             self._auto_checked_update = True
             if self._cfg.get("auto_update", True):
                 def _silent_check(res):
-                    self._update_result_pending = res
-                    from PyQt6.QtCore import QTimer as _QT
-                    _QT.singleShot(0, self._apply_update_result)
+                    try:
+                        sig = getattr(self, "_update_result_signal", None)
+                        if sig is not None:
+                            sig.emit(res, False)
+                        else:
+                            self._update_result_pending = res
+                            self._apply_update_result()
+                    except Exception:
+                        pass
 
                 check_for_update_auto_async(callback=_silent_check)
 

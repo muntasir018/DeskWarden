@@ -7,6 +7,7 @@ import os
 import threading
 
 from ..core.paths import asset_path
+from ..core.sound_utils import play_block_sound
 from .icon_utils import get_exe_icon_pixmap, get_exe_icon_pixmap_qt
 from .ui_thread import _run_on_ui_thread
 
@@ -403,6 +404,7 @@ class BlockNotice:
                 if _fade_step[0] <= FADE_STEPS:
                     QTimer.singleShot(FADE_INTERVAL, _fade_in)
 
+            play_block_sound()
             QTimer.singleShot(30, _fade_in)
 
             _raising = [False]

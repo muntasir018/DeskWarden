@@ -31,6 +31,31 @@ def make_icon():
     d.rectangle([30, 45, 34, 53], fill="#e2e8f0")
     return img
 
+
+def make_orange_icon():
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([10, 30, 54, 58], radius=8, fill="#f97316")
+    d.arc([18, 8, 46, 36], start=200, end=340, fill="#fed7aa", width=7)
+    d.ellipse([27, 38, 37, 48], fill="#ffffff")
+    d.rectangle([30, 45, 34, 53], fill="#ffffff")
+    return img
+
+
+def make_orange_unlocked_icon():
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    # 1. Shackle (drawn behind body for seamless edge)
+    d.line([21, 13, 21, 35], fill="#fed7aa", width=7)
+    d.arc([18, 2, 46, 24], start=180, end=360, fill="#fed7aa", width=7)
+    d.line([43, 13, 43, 17], fill="#fed7aa", width=7)
+    # 2. Padlock Body (cleanly overlays shackle base)
+    d.rounded_rectangle([10, 30, 54, 58], radius=8, fill="#f97316")
+    # 3. Keyhole
+    d.ellipse([27, 38, 37, 48], fill="#ffffff")
+    d.rectangle([30, 45, 34, 53], fill="#ffffff")
+    return img
+
 import ctypes
 from ctypes import wintypes
 
@@ -50,9 +75,16 @@ WM_LBUTTONUP    = 0x0202
 WM_RBUTTONUP    = 0x0205
 WM_DESTROY      = 0x0002
 NIN_BALLOONUSERCLICK = 0x0400 + 5   # WM_USER + 5
-IDM_CONTROL_PANEL = 1001
-IDM_QUIT        = 1002
+IDM_CONTROL_PANEL      = 1001
+IDM_QUIT               = 1002
+IDM_RESUME_PROTECTION  = 1003
+IDM_PAUSE_15M          = 1011
+IDM_PAUSE_30M          = 1012
+IDM_PAUSE_1H           = 1013
+IDM_PAUSE_2H           = 1014
+IDM_PAUSE_INDEFINITE   = 1015
 MF_STRING       = 0x00000000
+MF_POPUP        = 0x00000010
 MF_SEPARATOR    = 0x00000800
 TPM_LEFTALIGN   = 0x0000
 TPM_RETURNCMD   = 0x0100
@@ -146,15 +178,20 @@ def _get_balloon_hicon():
     return _custom_balloon_hicon
 
 class NativeTray:
-    def __init__(self, on_control_panel, on_quit):
-        self._on_control_panel = on_control_panel
-        self._on_quit      = on_quit
-        self._hwnd         = None
-        self._hicon        = None
-        self._alive        = threading.Event()
-        self._thread       = threading.Thread(target=self._run, daemon=False, name="TrayThread")
-        self._badge_active = False
-        self._toaster       = None  
+    def __init__(self, on_control_panel, on_quit, on_pause=None, on_resume=None,
+                 get_paused_fn=None, get_pause_status_fn=None):
+        self._on_control_panel     = on_control_panel
+        self._on_quit              = on_quit
+        self._on_pause             = on_pause
+        self._on_resume            = on_resume
+        self._get_paused_fn        = get_paused_fn
+        self._get_pause_status_fn  = get_pause_status_fn
+        self._hwnd                 = None
+        self._hicon                = None
+        self._alive                = threading.Event()
+        self._thread               = threading.Thread(target=self._run, daemon=False, name="TrayThread")
+        self._badge_active         = False
+        self._toaster              = None  
     def start(self):
         self._thread.start()
         self._alive.wait(timeout=5)
@@ -188,7 +225,7 @@ class NativeTray:
                 wc.lpszClassName, "DeskWarden", 0,
                 0, 0, 0, 0, 0, 0, wc.hInstance, None)
 
-            self._hicon = _pil_to_hicon(make_icon())
+            self._hicon = _pil_to_hicon(self._render_current_icon())
 
             nid = NOTIFYICONDATA()
             nid.cbSize           = ctypes.sizeof(NOTIFYICONDATA)
@@ -217,16 +254,25 @@ class NativeTray:
             except Exception:
                 pass
 
-    def set_badge(self, active: bool):
-       
+    def _render_current_icon(self):
+        is_paused = False
+        if self._get_paused_fn:
+            try:
+                is_paused = bool(self._get_paused_fn())
+            except Exception:
+                is_paused = False
+
+        img = make_orange_unlocked_icon() if is_paused else make_icon()
+        if self._badge_active:
+            d = ImageDraw.Draw(img)
+            d.ellipse([42, 2, 62, 22], fill="#ef4444", outline="#1a0f2e", width=3)
+        return img
+
+    def refresh_icon(self):
         if not self._hwnd:
             return
         try:
-            self._badge_active = bool(active)
-            img = make_icon()
-            if active:
-                d = ImageDraw.Draw(img)
-                d.ellipse([42, 2, 62, 22], fill="#ef4444", outline="#1a0f2e", width=3)
+            img = self._render_current_icon()
             new_hicon = _pil_to_hicon(img)
 
             nid = NOTIFYICONDATA()
@@ -245,7 +291,11 @@ class NativeTray:
                 except Exception:
                     pass
         except Exception as e:
-            log_crash("NativeTray.set_badge", e)
+            log_crash("NativeTray.refresh_icon", e)
+
+    def set_badge(self, active: bool):
+        self._badge_active = bool(active)
+        self.refresh_icon()
 
     def show_update_toast(self, version: str, message: str = ""):
         
@@ -286,12 +336,94 @@ class NativeTray:
         except Exception as e:
             log_crash("NativeTray.show_update_toast", e)
 
+    def show_info_toast(self, title: str, message: str = ""):
+        """Display an informational Windows notification (Toast or Balloon)."""
+        title_str = (title or "DeskWarden")[:63]
+        body_str = (message or "")[:255]
+
+        if self._toaster is not None:
+            try:
+                toast = _WTToast()
+                toast.text_fields = [title_str, body_str]
+                toast.on_activated = lambda _: threading.Thread(
+                    target=self._on_control_panel, daemon=True).start()
+                self._toaster.show_toast(toast)
+                return
+            except Exception as e:
+                log_crash("NativeTray.show_info_toast (windows_toasts)", e)
+
+        if not self._hwnd:
+            return
+        try:
+            nid = NOTIFYICONDATA()
+            nid.cbSize = ctypes.sizeof(NOTIFYICONDATA)
+            nid.hWnd   = self._hwnd
+            nid.uID    = 1
+            nid.uFlags = NIF_INFO
+            nid.szInfoTitle = title_str
+            nid.szInfo = body_str
+
+            balloon_icon = _get_balloon_hicon()
+            if balloon_icon:
+                nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON
+                nid.hBalloonIcon = balloon_icon
+            else:
+                nid.dwInfoFlags = NIIF_INFO
+
+            Shell_NotifyIcon(NIM_MODIFY, ctypes.byref(nid))
+        except Exception as e:
+            log_crash("NativeTray.show_info_toast", e)
+
+    def update_tooltip(self, text: str):
+        if not self._hwnd:
+            return
+        try:
+            nid = NOTIFYICONDATA()
+            nid.cbSize = ctypes.sizeof(NOTIFYICONDATA)
+            nid.hWnd   = self._hwnd
+            nid.uID    = 1
+            nid.uFlags = NIF_TIP
+            nid.szTip  = text[:127]
+            Shell_NotifyIcon(NIM_MODIFY, ctypes.byref(nid))
+        except Exception as e:
+            log_crash("NativeTray.update_tooltip", e)
+
     def _show_menu(self):
         try:
+            is_paused = False
+            if self._get_paused_fn:
+                try:
+                    is_paused = bool(self._get_paused_fn())
+                except Exception:
+                    pass
+
             hmenu = win32gui.CreatePopupMenu()
-            win32gui.AppendMenu(hmenu, MF_STRING,    IDM_CONTROL_PANEL, "Open Control Panel")
-            win32gui.AppendMenu(hmenu, MF_SEPARATOR, 0,            "")
-            win32gui.AppendMenu(hmenu, MF_STRING,    IDM_QUIT,     "Quit DeskWarden")
+            win32gui.AppendMenu(hmenu, MF_STRING, IDM_CONTROL_PANEL, "Open Control Panel")
+            win32gui.AppendMenu(hmenu, MF_SEPARATOR, 0, "")
+
+            if is_paused:
+                status_text = ""
+                if self._get_pause_status_fn:
+                    try:
+                        status_text = self._get_pause_status_fn()
+                    except Exception:
+                        pass
+                resume_label = f"▶  Resume Protection ({status_text})" if status_text and status_text != "Paused" else "▶  Resume Protection"
+                win32gui.AppendMenu(hmenu, MF_STRING, IDM_RESUME_PROTECTION, resume_label)
+            else:
+                h_pause_sub = win32gui.CreatePopupMenu()
+                win32gui.AppendMenu(h_pause_sub, MF_STRING, IDM_PAUSE_15M, "⏱  15 Minutes")
+                win32gui.AppendMenu(h_pause_sub, MF_STRING, IDM_PAUSE_30M, "⏱  30 Minutes")
+                win32gui.AppendMenu(h_pause_sub, MF_STRING, IDM_PAUSE_1H,  "⏱  1 Hour")
+                win32gui.AppendMenu(h_pause_sub, MF_STRING, IDM_PAUSE_2H,  "⏱  2 Hours")
+                win32gui.AppendMenu(h_pause_sub, MF_SEPARATOR, 0, "")
+                win32gui.AppendMenu(h_pause_sub, MF_STRING, IDM_PAUSE_INDEFINITE, "❚❚  Until Resumed")
+
+                win32gui.AppendMenu(hmenu, MF_POPUP, h_pause_sub, "❚❚  Pause Protection")
+
+            win32gui.AppendMenu(hmenu, MF_SEPARATOR, 0, "")
+            win32gui.AppendMenu(hmenu, MF_STRING, IDM_QUIT, "Quit DeskWarden")
+
             pt = win32gui.GetCursorPos()
             win32gui.SetForegroundWindow(self._hwnd)
             cmd = ctypes.windll.user32.TrackPopupMenu(
@@ -301,6 +433,24 @@ class NativeTray:
             win32gui.DestroyMenu(hmenu)
             if cmd == IDM_CONTROL_PANEL:
                 threading.Thread(target=self._on_control_panel, daemon=True).start()
+            elif cmd == IDM_RESUME_PROTECTION:
+                if self._on_resume:
+                    threading.Thread(target=self._on_resume, daemon=True).start()
+            elif cmd == IDM_PAUSE_15M:
+                if self._on_pause:
+                    threading.Thread(target=lambda: self._on_pause(15 * 60), daemon=True).start()
+            elif cmd == IDM_PAUSE_30M:
+                if self._on_pause:
+                    threading.Thread(target=lambda: self._on_pause(30 * 60), daemon=True).start()
+            elif cmd == IDM_PAUSE_1H:
+                if self._on_pause:
+                    threading.Thread(target=lambda: self._on_pause(60 * 60), daemon=True).start()
+            elif cmd == IDM_PAUSE_2H:
+                if self._on_pause:
+                    threading.Thread(target=lambda: self._on_pause(120 * 60), daemon=True).start()
+            elif cmd == IDM_PAUSE_INDEFINITE:
+                if self._on_pause:
+                    threading.Thread(target=lambda: self._on_pause(None), daemon=True).start()
             elif cmd == IDM_QUIT:
                 threading.Thread(target=self._on_quit, daemon=True).start()
         except Exception as e:

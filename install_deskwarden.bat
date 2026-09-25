@@ -6,7 +6,7 @@ for /f "tokens=3" %%a in ('reg query "HKCU\Console" /v QuickEdit 2^>nul ^| finds
 reg add "HKCU\Console" /v QuickEdit /t REG_DWORD /d 0 /f >nul 2>&1
 
 :: ============================================================
-::  DeskWarden Installer v1.2.0
+::  DeskWarden Installer v1.3.0
 :: ============================================================
 
 set "HALT=0"
@@ -60,7 +60,7 @@ endlocal & exit /b %EXIT_CODE%
 cls
 echo.
 echo  ===========================================================
-echo   DeskWarden  ^|  Application Locker  ^|  v1.2.0 Installer
+echo   DeskWarden  ^|  Application Locker  ^|  v1.3.0 Installer
 echo  ===========================================================
 echo.
 echo   This installer will:

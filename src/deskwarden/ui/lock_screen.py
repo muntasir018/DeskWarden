@@ -9,8 +9,9 @@ import threading
 from ..core.paths import asset_path
 from ..core.security import (
     hash_pw, record_wrong_attempt, check_locked_out,
-    reset_attempt_state, log_security_event, PENALTY_THRES,
+    reset_attempt_state, log_security_event, PENALTY_THRES, is_caps_lock_on,
 )
+from ..core.sound_utils import play_unlock_sound, play_error_sound
 from .icon_utils import get_exe_icon_pixmap, get_exe_icon_pixmap_qt
 from .ui_thread import _run_on_ui_thread
 
@@ -467,9 +468,34 @@ class LockScreen:
 
             def _on_txt_changed(txt):
                 _update_strength(txt)
+                _check_caps()
                 if err_lbl.text() == "Please enter your password.":
                     err_lbl.setText("")
 
+            # Caps Lock indicator
+            caps_lbl = QLabel("⚠️ Caps Lock is ON")
+            _caps_font = QFont("Segoe UI", 7, QFont.Weight.Bold)
+            caps_lbl.setFont(_caps_font)
+            caps_lbl.setStyleSheet("color: #f59e0b; background: transparent;")
+            caps_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            caps_lbl.setFixedHeight(12)
+            caps_lbl.setVisible(is_caps_lock_on())
+            right_l.addWidget(caps_lbl)
+
+            def _check_caps():
+                if _alive[0]:
+                    caps_lbl.setVisible(is_caps_lock_on())
+
+            _orig_kp = pw_edit.keyPressEvent
+            _orig_kr = pw_edit.keyReleaseEvent
+            def _pw_kp(ev):
+                _orig_kp(ev)
+                _check_caps()
+            def _pw_kr(ev):
+                _orig_kr(ev)
+                _check_caps()
+            pw_edit.keyPressEvent = _pw_kp
+            pw_edit.keyReleaseEvent = _pw_kr
             pw_edit.textChanged.connect(_on_txt_changed)
 
             # Error label
@@ -709,6 +735,7 @@ class LockScreen:
                         current_pw_hash = password_hash
 
                     if hash_pw(entered_txt) == current_pw_hash:
+                        play_unlock_sound()
                         reset_attempt_state(ctx_key)
                         log_security_event("success", ctx_key, "unlocked")
                         _top_timer.stop()
@@ -719,6 +746,7 @@ class LockScreen:
                             pass
                         _finish(True)
                     else:
+                        play_error_sound()
                         state = record_wrong_attempt(ctx_key)
                         pw_edit.clear()
                         if state["locked"]:

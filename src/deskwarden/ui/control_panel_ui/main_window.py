@@ -8,7 +8,7 @@ of logic.
 """
 
 from PyQt6.QtWidgets import QMainWindow
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPalette, QColor
 
 from ...core.config import load_config
@@ -38,6 +38,8 @@ class _ControlPanelWin(
     _SettingsIOMixin,
     QMainWindow,
 ):
+    _update_result_signal = pyqtSignal(object, bool)
+
     MODE_CFG = {
         "ask_always":      ("🔑", "#1e0d40", "#c4b5fd", _ACC,  "🔑  Ask Always",           "Asks for password every time the app is opened"),
         "session_once":    ("✅", "#071e28", "#67e8f9", _TEAL, "✅  Session Once",          "Once unlocked, stays unlocked until the PC is shut down"),
@@ -47,6 +49,7 @@ class _ControlPanelWin(
 
     def __init__(self):
         super().__init__()
+        self._update_result_signal.connect(self._on_update_result_received)
         self.setWindowTitle("DeskWarden — Control Panel")
         self.setWindowFlags(
             Qt.WindowType.Window |

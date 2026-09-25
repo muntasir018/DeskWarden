@@ -11,8 +11,8 @@ import threading
 import psutil
 
 from ..core.logging_utils import dlog, log_crash
-from ..core.config import load_config
-from ..core.security import UNLOCK_GRACE_SECONDS, MIN_GRACE_LIVENESS_DELAY
+from ..core.config import load_config, save_config
+from ..core.security import UNLOCK_GRACE_SECONDS, MIN_GRACE_LIVENESS_DELAY, log_security_event
 from ..core.process_utils import _get_process_tree_pids
 
 
@@ -25,11 +25,109 @@ class AppMonitor(threading.Thread):
         self._session_unlocked_exes = set()
         self._busy           = False
         self._busy_exe       = None
+        self._paused         = False
+        self._pause_until    = None
+        self._on_auto_resume = None
+        try:
+            _init_cfg = load_config()
+            if _init_cfg.get("protection_paused", False):
+                _init_cfg["protection_paused"] = False
+                save_config(_init_cfg)
+        except Exception:
+            pass
         self._unlock_grace: dict = {}
         self._unlock_exe_pids: dict = {}
         self._close_watchlist: set = set()
         self._lock           = threading.Lock()
         self._lock_queue     = queue.Queue()
+
+    def pause_protection(self, duration_seconds: int = None):
+        with self._lock:
+            self._paused = True
+            if duration_seconds and duration_seconds > 0:
+                self._pause_until = time.time() + duration_seconds
+            else:
+                self._pause_until = None
+        try:
+            cfg = load_config()
+            cfg["protection_paused"] = True
+            save_config(cfg)
+        except Exception:
+            pass
+        if duration_seconds:
+            mins = int(duration_seconds // 60)
+            unit = "minute" if mins == 1 else "minutes"
+            dlog("INFO", f"AppMonitor: protection PAUSED for {mins} {unit}")
+            try:
+                log_security_event("protection_paused", "System Tray", f"Protection paused for {mins} {unit}")
+            except Exception:
+                pass
+        else:
+            dlog("INFO", "AppMonitor: protection PAUSED (until manually resumed)")
+            try:
+                log_security_event("protection_paused", "System Tray", "App protection temporarily paused")
+            except Exception:
+                pass
+
+    def resume_protection(self):
+        with self._lock:
+            self._paused = False
+            self._pause_until = None
+            self._seen_pids.clear()
+        try:
+            cfg = load_config()
+            cfg["protection_paused"] = False
+            save_config(cfg)
+        except Exception:
+            pass
+        dlog("INFO", "AppMonitor: protection RESUMED (all apps locked)")
+        try:
+            log_security_event("protection_resumed", "System Tray", "App protection resumed")
+        except Exception:
+            pass
+
+    def is_paused(self) -> bool:
+        with self._lock:
+            return self._paused
+
+    def get_pause_remaining_seconds(self) -> int:
+        with self._lock:
+            if not self._paused or not self._pause_until:
+                return 0
+            return max(0, int(self._pause_until - time.time()))
+
+    def get_pause_status_text(self) -> str:
+        with self._lock:
+            if not self._paused:
+                return ""
+            if not self._pause_until:
+                return "Paused"
+            rem = max(0, int(self._pause_until - time.time()))
+            if rem <= 0:
+                return "Resuming..."
+            if rem < 60:
+                return f"{rem}s remaining"
+            mins = (rem + 59) // 60
+            if mins >= 60:
+                hrs = mins // 60
+                rmins = mins % 60
+                return f"{hrs}h {rmins}m remaining" if rmins > 0 else f"{hrs}h remaining"
+            else:
+                return f"{mins}m remaining"
+
+    def _check_pause_expiry(self):
+        auto_resume = False
+        with self._lock:
+            if self._paused and self._pause_until:
+                if time.time() >= self._pause_until:
+                    auto_resume = True
+        if auto_resume:
+            self.resume_protection()
+            if self._on_auto_resume:
+                try:
+                    self._on_auto_resume()
+                except Exception as e:
+                    log_crash("AppMonitor._on_auto_resume", e)
 
     def run(self):
         dlog("INFO", "AppMonitor: process scan loop started (every 300ms)")
@@ -37,6 +135,7 @@ class AppMonitor(threading.Thread):
         cleanup_counter = 0
         while True:
             try:
+                self._check_pause_expiry()
                 self._scan_all_processes()
                 self._check_grace_liveness()
                 self._cleanup_close_watchlist()
@@ -196,6 +295,8 @@ class AppMonitor(threading.Thread):
         return False
 
     def _scan_all_processes(self):
+        if self._paused:
+            return
         cfg = load_config()
         if not cfg["locked_apps"] or not cfg["password_hash"]:
             return

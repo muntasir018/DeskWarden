@@ -66,15 +66,22 @@ Multiple protection layers designed to resist unauthorized access, process termi
   - **Session Once** — requires password once, then remembers until PC restart.
   - **Always Block** — permanently blocked, no password option
   - **None** — tracks the application without applying access restrictions
+- ⏸️ **Temporary Protection Pause & Auto-Resume** — pause all application locks for 15m, 30m, 1h, 2h, or until manually resumed with password authentication.
+- 🔔 **Auto-Resume Tray Notification** — automatic Windows notification alert when your pause timer finishes and full protection reactivates.
+- 🔓 **Dynamic Tray Status Icon** — system tray padlock dynamically shifts from a purple locked padlock (active) to an open orange padlock (paused) for at-a-glance status recognition.
+- 🔊 **Cyber Sound FX Engine** — rich audio feedback with bass-accented unlock chimes, access-denied warnings, and block screen notices.
+- 🔠 **Real-time Caps Lock Indicator** — live visual warning across all password fields whenever Caps Lock is engaged.
 - 🚫 **Wrong password protection** — failed authentication attempts are blocked and the protected application is terminated
 - 🔑 **Password Reset** — reset forgotten passwords using an Emergency Recovery Key or Email OTP
 - 🔍 **Live App Search Bar** — quickly find and filter through your protected applications
 - 🔐 **SHA-256 password hashing** — your password is never stored in plain text
 - ⏱️ **Brute-force protection** — authentication is temporarily locked after 3 consecutive failed attempts
 - 💾 **Encrypted Backup & Restore** — export and import your entire setup with AES-256-GCM `.deskwarden` containers
-- 🔄 **Update Manager** — checks for new versions and provides in-app release notes with a direct download option.
-- 📋 **Security Log** — full history of every unlock and failed attempt
+- 🔄 **Update Manager** — checks for new versions with in-app release notes, visual update badges, and a direct download option.
+- 📋 **Security Log** — full history of every unlock, pause, resume, and failed attempt
 - 🚀 **Starts with Windows** — automatically launches with Windows to keep protection active
+
+> ⚡ **...and many more features designed for seamless desktop security.**
 
 ---
 

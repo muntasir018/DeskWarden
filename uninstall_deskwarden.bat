@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-::  DeskWarden Uninstaller v1.2.0
+::  DeskWarden Uninstaller v1.3.0
 :: ============================================================
 
 set "ABORT=0"
@@ -55,7 +55,7 @@ exit /b 0
 cls
 echo.
 echo  ===========================================================
-echo   DeskWarden  ^|  Application Locker  ^|  v1.2.0 Uninstaller
+echo   DeskWarden  ^|  Application Locker  ^|  v1.3.0 Uninstaller
 echo  ===========================================================
 echo.
 echo   This uninstaller will:

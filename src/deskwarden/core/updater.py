@@ -13,7 +13,7 @@ from .config import load_config, save_config
 from .logging_utils import dlog
 
 
-CURRENT_VERSION  = "v1.2.0"
+CURRENT_VERSION  = "v1.3.0"
 GITHUB_API_URL   = "https://api.github.com/repos/muntasir018/DeskWarden/releases/latest"
 
 

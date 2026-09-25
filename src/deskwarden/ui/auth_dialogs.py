@@ -11,8 +11,9 @@ from ..core.logging_utils import dlog, log_crash
 from ..core.config import load_config
 from ..core.security import (
     hash_pw, record_wrong_attempt, check_locked_out,
-    reset_attempt_state, log_security_event, PENALTY_THRES,
+    reset_attempt_state, log_security_event, PENALTY_THRES, is_caps_lock_on,
 )
+from ..core.sound_utils import play_unlock_sound, play_error_sound
 from . import ui_thread
 
 # ═════════════════════════════════════════════════════════════════════════
@@ -117,11 +118,11 @@ def show_control_panel_auth(on_success, cp_obj=None):
         Qt.WindowType.Tool
     )
     dlg.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-    dlg.setFixedSize(460, 270)
+    dlg.setFixedSize(480, 270)
 
     qapp = ui_thread._qapp or QApplication.instance()
     sg = qapp.primaryScreen().geometry()
-    dlg.move(sg.x() + (sg.width() - 460) // 2, sg.y() + (sg.height() - 270) // 2)
+    dlg.move(sg.x() + (sg.width() - 480) // 2, sg.y() + (sg.height() - 270) // 2)
 
     outer_lay = QVBoxLayout(dlg)
     outer_lay.setContentsMargins(0, 0, 0, 0)
@@ -155,19 +156,25 @@ def show_control_panel_auth(on_success, cp_obj=None):
     body = QWidget(); body.setStyleSheet("background: transparent;")
     body_lay = QHBoxLayout(body); body_lay.setContentsMargins(0,0,0,0); body_lay.setSpacing(0)
 
-    sb = QWidget(); sb.setFixedWidth(140)
-    sb.setStyleSheet("background: transparent;")
+    sb = QWidget(); sb.setFixedWidth(145)
+    sb.setStyleSheet("background: #0c0a17; border-bottom-left-radius: 14px;")
     sbl = QVBoxLayout(sb); sbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    sbl.setContentsMargins(0, 24, 0, 16); sbl.setSpacing(6)
+    sbl.setContentsMargins(0, 26, 0, 24); sbl.setSpacing(10)
 
     # ── Auth dialog logo size adjustment ──
-    _AUTH_LOGO_SIZE = 44   
-    _AUTH_RING_SIZE = 56   
+    _AUTH_LOGO_SIZE = 56   
+    _AUTH_RING_SIZE = 72   
     from PyQt6.QtGui import QPixmap
 
     icon_container = QWidget()
     icon_container.setFixedSize(_AUTH_RING_SIZE, _AUTH_RING_SIZE)
     icon_container.setStyleSheet("background: transparent;")
+
+    _avatar_glow = QGraphicsDropShadowEffect()
+    _avatar_glow.setBlurRadius(22)
+    _avatar_glow.setColor(QColor("#7c3aed"))
+    _avatar_glow.setOffset(0, 0)
+    icon_container.setGraphicsEffect(_avatar_glow)
 
     _avatar_lbl = QLabel(icon_container)
     _avatar_lbl.setFixedSize(_AUTH_RING_SIZE, _AUTH_RING_SIZE)
@@ -197,7 +204,7 @@ def show_control_panel_auth(on_success, cp_obj=None):
         _avatar_lbl.setPixmap(_circ_pm)
     else:
         _avatar_lbl.setText("\U0001F512")
-        _avatar_lbl.setStyleSheet(_avatar_lbl.styleSheet() + f"color: {_ACC2}; font-size: 16pt;")
+        _avatar_lbl.setStyleSheet(_avatar_lbl.styleSheet() + f"color: {_ACC2}; font-size: 20pt;")
 
     icon_ring = QWidget(icon_container)
     icon_ring.setFixedSize(_AUTH_RING_SIZE, _AUTH_RING_SIZE)
@@ -211,7 +218,7 @@ def show_control_panel_auth(on_success, cp_obj=None):
         grad.setColorAt(0.5, QColor(_ACC2))
         grad.setColorAt(1.0, QColor("#4c1d95"))
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(QPen(QBrush(grad), 2))
+        p.setPen(QPen(QBrush(grad), 2.5))
         p.drawEllipse(r)
 
     icon_ring.paintEvent = lambda ev: _draw_auth_ring(icon_ring, ev)
@@ -222,8 +229,8 @@ def show_control_panel_auth(on_success, cp_obj=None):
     al.setStyleSheet(f"color: {_FG}; background: transparent;")
     al.setAlignment(Qt.AlignmentFlag.AlignCenter); sbl.addWidget(al)
     sl = QLabel("Control Panel Auth")
-    sl.setFont(QFont("Segoe UI", 7))
-    sl.setStyleSheet(f"color: {_MUTE}; background: transparent;")
+    sl.setFont(QFont("Segoe UI", 8))
+    sl.setStyleSheet("color: #8b82af; background: transparent;")
     sl.setAlignment(Qt.AlignmentFlag.AlignCenter); sbl.addWidget(sl)
     body_lay.addWidget(sb)
 
@@ -267,6 +274,36 @@ def show_control_panel_auth(on_success, cp_obj=None):
                             else QLineEdit.EchoMode.Password)
         cp_eye_btn.setText("Hide" if _cp_pw_visible[0] else "Show")
     cp_eye_btn.clicked.connect(_cp_toggle_eye)
+
+    def _on_txt_changed(t):
+        _check_cp_caps()
+        if err_lbl.text() == "Please enter your password.":
+            err_lbl.setText("")
+
+    # Caps Lock indicator
+    caps_lbl = QLabel("⚠️ Caps Lock is ON")
+    caps_lbl.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
+    caps_lbl.setStyleSheet("color: #f59e0b; background: transparent;")
+    caps_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    caps_lbl.setFixedHeight(12)
+    caps_lbl.setVisible(is_caps_lock_on())
+    rpl.addWidget(caps_lbl)
+
+    def _check_cp_caps():
+        if dlg.isVisible():
+            caps_lbl.setVisible(is_caps_lock_on())
+
+    _orig_cp_kp = pw_edit.keyPressEvent
+    _orig_cp_kr = pw_edit.keyReleaseEvent
+    def _cp_kp(ev):
+        _orig_cp_kp(ev)
+        _check_cp_caps()
+    def _cp_kr(ev):
+        _orig_cp_kr(ev)
+        _check_cp_caps()
+    pw_edit.keyPressEvent = _cp_kp
+    pw_edit.keyReleaseEvent = _cp_kr
+    pw_edit.textChanged.connect(_on_txt_changed)
 
     err_lbl = QLabel("")
     _err_font2 = QFont("Segoe UI", 9)
@@ -434,11 +471,6 @@ def show_control_panel_auth(on_success, cp_obj=None):
             _cd[0] -= 1; QTimer.singleShot(1000, _tick)
         _tick()
 
-    def _on_txt_changed(t):
-        if err_lbl.text() == "Please enter your password.":
-            err_lbl.setText("")
-    pw_edit.textChanged.connect(_on_txt_changed)
-
     _attempting = [False]
 
     def _attempt():
@@ -457,6 +489,7 @@ def show_control_panel_auth(on_success, cp_obj=None):
                 return
             current_pw_hash = load_config().get("password_hash", cfg.get("password_hash", ""))
             if hash_pw(entered_txt) == current_pw_hash:
+                play_unlock_sound()
                 reset_attempt_state(CTX)
                 log_security_event("success", CTX, "opened control panel")
                 _unlocked[0] = True
@@ -468,6 +501,7 @@ def show_control_panel_auth(on_success, cp_obj=None):
                 dlg.hide()
                 dlg.close()
             else:
+                play_error_sound()
                 state = record_wrong_attempt(CTX)
                 pw_edit.clear()
                 if state["locked"]:
@@ -804,6 +838,36 @@ def show_quit_auth(on_success):
     pw_edit.resizeEvent = _pw_resize
     _pos_q_eye()
 
+    def _on_txt_changed_q(t):
+        _check_q_caps()
+        if err_lbl.text() == "Please enter your password.":
+            err_lbl.setText("")
+
+    # Caps Lock indicator
+    q_caps_lbl = QLabel("⚠️ Caps Lock is ON")
+    q_caps_lbl.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
+    q_caps_lbl.setStyleSheet("color: #f59e0b; background: transparent;")
+    q_caps_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    q_caps_lbl.setFixedHeight(12)
+    q_caps_lbl.setVisible(is_caps_lock_on())
+    rpl.addWidget(q_caps_lbl)
+
+    def _check_q_caps():
+        if dlg.isVisible():
+            q_caps_lbl.setVisible(is_caps_lock_on())
+
+    _orig_q_kp = pw_edit.keyPressEvent
+    _orig_q_kr = pw_edit.keyReleaseEvent
+    def _q_kp(ev):
+        _orig_q_kp(ev)
+        _check_q_caps()
+    def _q_kr(ev):
+        _orig_q_kr(ev)
+        _check_q_caps()
+    pw_edit.keyPressEvent = _q_kp
+    pw_edit.keyReleaseEvent = _q_kr
+    pw_edit.textChanged.connect(_on_txt_changed_q)
+
     acc_line = QFrame()
     acc_line.setFixedHeight(2)
     acc_line.setStyleSheet(f"background: {_RED}; border-radius: 1px;")
@@ -895,10 +959,6 @@ def show_quit_auth(on_success):
     # ── Auth logic ────────────────────────────────────────────────────────────
     CTX_Q = "Quit"
 
-    def _on_txt_changed_q(t):
-        if err_lbl.text() == "Please enter your password.":
-            err_lbl.setText("")
-    pw_edit.textChanged.connect(_on_txt_changed_q)
 
     def _start_cd(seconds):
         pw_edit.setEnabled(False)
@@ -940,6 +1000,7 @@ def show_quit_auth(on_success):
                 return
             current_pw_hash = load_config().get("password_hash", cfg.get("password_hash", ""))
             if hash_pw(entered_txt) == current_pw_hash:
+                play_unlock_sound()
                 _unlocked_q[0] = True
                 reset_attempt_state(CTX_Q)
                 log_security_event("success", CTX_Q, "quit confirmed")
@@ -952,6 +1013,7 @@ def show_quit_auth(on_success):
                 dlg.close()
                 on_success()
             else:
+                play_error_sound()
                 state = record_wrong_attempt(CTX_Q)
                 pw_edit.clear()
                 if state["locked"]:
@@ -985,3 +1047,4 @@ def release_control_panel_lock():
     global _cp_currently_open
     with _cp_open_lock:
         _cp_currently_open = False
+

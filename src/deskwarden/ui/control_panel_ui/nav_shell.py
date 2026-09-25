@@ -11,6 +11,7 @@ from PyQt6.QtGui import QColor, QPainter, QFont, QCursor, QPixmap
 
 from ...core.paths import asset_path
 from ...core.logging_utils import dlog
+from ...core.updater import CURRENT_VERSION
 
 from .theme import _BG, _SIDE, _CARD, _BORD, _ACC, _FG, _MUTE, _GREEN, _glow
 from .widgets import _IconBox, _NavBtn, _StatusSpinner, _RotatingStatus
@@ -151,7 +152,7 @@ class _NavShellMixin:
             " background: transparent;"
         )
         _glow(anl, QColor(200, 180, 255, 80), 16)
-        avl = QLabel("v1.2.0  ·  Windows")
+        avl = QLabel(f"{CURRENT_VERSION}  ·  Windows")
         avl.setFont(QFont("Segoe UI", 8))
         avl.setStyleSheet(f"color: #7c6da8; background: transparent; letter-spacing: 0.3px;")
         btl.addWidget(anl); btl.addWidget(avl)
@@ -419,6 +420,9 @@ class _NavShellMixin:
             for k, nb in self._nav_btns.items():
                 nb.setChecked(k == key)
             self._scroll.verticalScrollBar().setValue(0)
+            if key == "apps":
+                if hasattr(self, "_refresh_apps"):
+                    self._refresh_apps()
             if key == "log":       self._refresh_log()
             if key == "diag_log":  self._refresh_diag_log()
             if key == "crash_log": self._refresh_crash_log()

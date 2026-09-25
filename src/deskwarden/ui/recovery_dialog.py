@@ -33,6 +33,7 @@ from ..core.security import (
     record_wrong_attempt, check_locked_out, reset_attempt_state,
     log_security_event, PENALTY_THRES, check_daily_otp_limit,
 )
+from ..core.sound_utils import play_unlock_sound, play_error_sound
 from .ui_thread import _run_on_ui_thread
 
 
@@ -815,10 +816,12 @@ class RecoveryDialog(QWidget):
             return
 
         if entered == self._pending_otp:
+            play_unlock_sound()
             reset_attempt_state("Account Recovery")
             log_security_event("otp_verified", "Account Recovery", "Email OTP code validated successfully")
             self._show_step_2_new_password()
         else:
+            play_error_sound()
             state = record_wrong_attempt("Account Recovery", event_type="wrong_otp")
             self._otp_input.clear()
             if state["locked"]:
@@ -912,11 +915,13 @@ class RecoveryDialog(QWidget):
             return
 
         if verify_recovery_key(entered, stored_hash):
+            play_unlock_sound()
             reset_attempt_state("Account Recovery")
             log_security_event("recovery_key_verified", "Account Recovery", "Recovery key validated successfully")
             self._verified_key = entered
             self._show_step_2_new_password()
         else:
+            play_error_sound()
             state = record_wrong_attempt("Account Recovery", event_type="wrong_recovery_key")
             self._key_input.clear()
             if state["locked"]:
