@@ -155,6 +155,12 @@ Locking any software, browser, tool, or game on your PC takes just a few clicks:
 
 ---
 
+## ℹ️ About the Project
+
+DeskWarden is an independent open-source project, created and maintained by Tahasinur Rahman Muntasir. It is developed as its own product and brand, and does not operate under any company.
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License.
