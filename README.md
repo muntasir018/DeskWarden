@@ -4,6 +4,8 @@
 
 ![DeskWarden Logo](https://github.com/user-attachments/assets/db1db07c-080c-440a-acd7-feea60f4e218)
 
+**🌐 [Official Website](https://deskwarden.netlify.app)  ·  💻 [Official GitHub](https://github.com/muntasir018/DeskWarden)**
+
 > Copyright © 2026 Tahasinur Rahman Muntasir. Licensed under the [MIT License](LICENSE).
 
 > **Your PC. Your rules.**
@@ -156,7 +158,8 @@ Locking any software, browser, tool, or game on your PC takes just a few clicks:
 ## 📄 License
 
 This project is licensed under the MIT License.
-You are free to use, modify, and distribute this software.
+You are free to use, modify, and distribute this
+ software.
 Attribution to the original author must be preserved in all copies.
 
 > Built with ❤️ by [Tahasinur Rahman Muntasir](https://github.com/muntasir018)
